@@ -378,6 +378,22 @@ def link_wallet_to_user(*, user: User, chain: str, address: str, signature: str,
     return user
 
 
+def link_evm_wallet(*, user: User, address: str, signature: str, nonce: str) -> LinkedWallet:
+    challenge = _lock_challenge(
+        nonce=nonce,
+        chain=Chain.EVM,
+        purpose=AuthChallenge.Purpose.LINK_WALLET,
+        user=user,
+    )
+    try:
+        canonical = _verify_evm(challenge, address=address, signature=signature)
+        wallet = _attach_wallet(user, chain=Chain.EVM, address=canonical)
+        _consume(challenge)
+        return wallet
+    finally:
+        challenge.refresh_from_db()
+
+
 def link_ton_wallet(*, user: User, proof: TonProof) -> LinkedWallet:
     challenge = _lock_challenge(
         nonce=proof.payload,

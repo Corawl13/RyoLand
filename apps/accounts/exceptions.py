@@ -29,18 +29,22 @@ class InvalidTelegramData(DomainError):
 class AccountNotAllowed(DomainError):
     default_message = "This account is not allowed to sign in."
     default_code = "account_not_allowed"
+    http_status = 403
 
 
 class IdentityAlreadyLinked(DomainError):
     default_message = "This identity is already linked to an account."
     default_code = "identity_already_linked"
+    http_status = 409
 
 
 class LinkedWalletLimitReached(DomainError):
     default_message = "The maximum number of linked wallets has been reached."
     default_code = "linked_wallet_limit_reached"
+    http_status = 409
 
 
 class LastAuthMethod(DomainError):
     default_message = "You cannot remove your only way to sign in."
     default_code = "last_auth_method"
+    http_status = 409

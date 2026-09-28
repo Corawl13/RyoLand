@@ -6,6 +6,7 @@ class DomainError(Exception):
 
     default_message = "A business rule was violated."
     default_code = "domain_error"
+    http_status = 400
 
     def __init__(self, message: str | None = None, *, code: str | None = None):
         self.message = message or self.default_message
