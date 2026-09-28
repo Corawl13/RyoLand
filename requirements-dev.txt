@@ -1,0 +1,3 @@
+-r requirements.txt
+pytoniq>=0.1         # optional: lets the tests cross-check real wallet v3/v4/v5 layouts
+ruff

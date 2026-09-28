@@ -1,0 +1,7 @@
+Django>=5.2,<7
+djangorestframework>=3.15
+djangorestframework-simplejwt>=5.3
+psycopg[binary]>=3.2
+PyNaCl>=1.5          # ed25519 (TON proof verification)
+eth-account>=0.13    # EVM signature recovery / address checksums
+pytoniq-core>=0.1    # TON cell/BOC parsing (wallet stateInit)
