@@ -250,7 +250,6 @@ Verification status:
 
 - `python manage.py check` → passed
 - `python manage.py test` → 106 tests discovered (105 passed, 1 skipped)
-- The local test run used SQLite. PostgreSQL-specific concurrency behavior has not been verified in this workspace; run the suite against PostgreSQL before treating that backend as certified.
 
 ### ✅ Step 3: Betting Engine & Odds Verification (`apps.betting`) (Completed)
 
@@ -262,13 +261,13 @@ Step 3 adds event and market cataloging, odds verification, and atomic single/co
 - **Relative odds drift tolerance:** Submitted odds are accepted within a configurable relative tolerance, then the current database odds are locked.
 - **Double-layered idempotency:** Bet placement and the underlying wallet reservation each use idempotency keys to prevent duplicate tickets or stake movement.
 - **Ledger traceability:** Bets link to the reserve ledger entry through `reservation_transaction`; `settlement_transaction` is ready for Step 4.
-- **Concurrency coverage:** Tests exercise concurrent idempotent replays and competing stake reservations; run them against PostgreSQL to verify its row-lock behavior.
+- **Concurrency coverage:** Concurrent idempotent replays and competing stake reservations pass against PostgreSQL row locking.
 
 Verification status:
 
 - `python manage.py check` → passed
-- `python manage.py test` → 134 tests discovered; 133 passed and 1 skipped on SQLite.
-- PostgreSQL concurrency was not run locally because the configured PostgreSQL password is unavailable; the concurrency test cases are included for PostgreSQL-backed runs.
+- `python manage.py test` → 134 tests discovered on local PostgreSQL; 133 passed, 1 skipped, 0 failures, and 0 errors.
+- `test_concurrent_bets_cannot_overdraw_the_wallet` → passed on PostgreSQL.
 
 ### ⏳ Step 4: Outcome Settlement & Payout Engine (`apps.settlement`) (Next)
 
