@@ -12,7 +12,7 @@
 
 RyoLand is a high-performance Web3 and Telegram-based online gaming and betting platform built with Django. The platform is designed around secure identity verification, wallet-aware authentication, reliable accounting, and modular service architecture that can scale into a full gaming ecosystem.
 
-This codebase currently implements the foundation layer for user identity and blockchain verification, including Telegram login, EVM wallet signing, TON proof verification, and JWT-protected API access. The project is intentionally aligned with strong domain principles so the future wallet, ledger, betting, and settlement systems are built on a safe and auditable foundation.
+This codebase implements user identity and blockchain verification, including Telegram login, EVM wallet signing, TON proof verification, and JWT-protected API access, alongside a wallet and append-only double-entry ledger. The next milestone is the betting engine and odds verification.
 
 ---
 
@@ -26,7 +26,7 @@ RyoLand combines:
 - Django REST Framework APIs
 - JWT authentication
 - modular app-based backend architecture
-- a future-ready financial ledger model for gaming operations
+- an append-only double-entry wallet ledger for financial operations
 
 The system is designed for operational clarity, idempotent state transitions, and a disciplined double-entry financial model instead of ad hoc balance mutation.
 
@@ -97,6 +97,7 @@ flowchart LR
     A[Web App / Telegram Mini App] --> B[DRF API Layer]
     B --> C[Accounts App]
     B --> D[Core App]
+    B --> W[Wallet App]
 
     C --> E[User Models]
     C --> F[Auth Challenges]
@@ -109,16 +110,17 @@ flowchart LR
     D --> L[Shared Exceptions]
     D --> M[Shared Utilities]
 
-    G --> N[Wallet App Planned]
-    N --> O[Wallet Ledger]
-    O --> P[PostgreSQL]
+    W --> X[Read-only Balance & History API]
+    W --> Y[WalletService]
+    Y --> Z[Ledger Accounts, Transactions & Entries]
+    Z --> P[(Database)]
     B --> Q[Redis]
 
-    R[Future Betting / Risk / Transactions Modules] --> O
-    O --> S[Auditable Balance & Settlement Engine]
+    R[Future Betting Engine] --> Y
+    Y --> S[Auditable Balance & Settlement Engine]
 ```
 
-This layered architecture keeps identity, wallet logic, and future gaming/financial modules separated and easier to validate independently.
+This layered architecture keeps identity, wallet logic, and future gaming modules separated and independently testable.
 
 ---
 
@@ -144,10 +146,19 @@ GameSection/
 │   │   ├── urls.py
 │   │   ├── verifiers.py
 │   │   └── views.py
-│   ├── wallet/                  # Planned
-│   │   └── ...
-│   ├── ledger/                  # Planned
-│   │   └── ...
+│   ├── wallet/
+│   │   ├── __init__.py
+│   │   ├── admin.py
+│   │   ├── apps.py
+│   │   ├── exceptions.py
+│   │   ├── migrations/
+│   │   │   └── 0001_initial.py
+│   │   ├── models.py
+│   │   ├── serializers.py
+│   │   ├── services.py
+│   │   ├── tests.py
+│   │   ├── urls.py
+│   │   └── views.py
 │   ├── betting/                 # Planned
 │   │   └── ...
 │   ├── transactions/            # Planned
@@ -182,11 +193,17 @@ GameSection/
 - `apps.core`
   - shared domain exceptions and reusable logic
 
+- `apps.wallet`
+  - multi-asset wallets and append-only double-entry ledger
+  - atomic wallet services with idempotency and balance locking
+  - read-only balance and paginated transaction-history APIs
+  - read-only Django admin for wallets and ledger records
+
 ---
 
 ## Current Status & Roadmap
 
-### ✅ Step 1: Core Foundation & Web3/Telegram Authentication (Completed)
+### ✅ Step 1 & 1b: Core Foundation, Web3 & Telegram Auth (Completed)
 
 This phase is complete and validated.
 
@@ -205,27 +222,28 @@ Completed features:
 Verification status:
 
 - `python manage.py check` → passed
-- `python manage.py test` → 40 tests passing, 1 skipped
+- `python manage.py test apps.accounts apps.core` → 77 tests discovered (76 passed, 1 skipped)
 
-### ⏳ Step 2: Wallet & Double-Entry Ledger System (In Progress)
+### ✅ Step 2: Wallet & Double-Entry Ledger System (`apps.wallet`) (Completed)
 
-The next milestone is the core financial layer:
+Step 2 adds the platform's auditable financial layer:
 
-- wallet account abstraction
-- balance accounting via double-entry ledger
-- immutable transaction posting
-- ledger-based settlement workflows
-- robust wallet link and unlink safeguards
-- integration points for betting and rewards flows
+- **Append-only double-entry ledger:** `LedgerTransaction`, `LedgerEntry`, and `LedgerAccount` record balanced, zero-sum transactions. Debit and credit behavior follows one consistent account-balance rule.
+- **Multi-asset support:** Wallets support USDT, TON, Telegram Stars (`STARS`), and bonus credits (`BONUS`).
+- **Balance locking:** `available_balance` and `locked_balance` distinguish spendable funds from amounts reserved for active bets and pending purchases. Withdrawals debit available funds atomically.
+- **Pessimistic locking and idempotency:** Wallet writes use `select_for_update()` and idempotency keys to prevent double-spending and duplicate postings. PostgreSQL is the intended backend for row-level locking.
+- **Telegram Fragment readiness:** Ledger transaction types support Stars, Premium, and NFT purchases through `PURCHASE_TG_STARS`, `PURCHASE_TG_PREMIUM`, and `PURCHASE_NFT`.
+- **Read-only API:** `GET /api/v1/wallet/balances/` returns balance breakdowns; `GET /api/v1/wallet/transactions/` returns paginated transaction history with filters.
 
-### Future roadmap
+Verification status:
 
-- wallet and custody management
-- transaction reconciliation and auditing
-- betting engine foundations
-- risk and anti-fraud checks
-- admin tooling and reporting
-- production deployment hardening
+- `python manage.py check` → passed
+- `python manage.py test` → 106 tests discovered (105 passed, 1 skipped)
+- The local test run used SQLite. PostgreSQL-specific concurrency behavior has not been verified in this workspace; run the suite against PostgreSQL before treating that backend as certified.
+
+### ⏳ Step 3: Betting Engine & Odds Verification (Upcoming Milestone)
+
+The next milestone will build the betting engine and verify odds, using the wallet service for atomic stake reservation and settlement.
 
 ---
 
@@ -358,4 +376,4 @@ This project is currently intended for internal and project-specific use. Add an
 
 ## Summary
 
-RyoLand is being built as a durable, secure, modular Web3 gaming platform. The current implementation establishes the identity and verification foundation required to evolve into a broader betting and gaming product. The next step is the wallet and ledger layer, which will provide the financial integrity needed to support real-money operations safely and auditable.
+RyoLand is a secure, modular Web3 gaming platform with identity verification and an auditable wallet ledger in place. The next milestone is the betting engine and odds verification, building on the wallet service for controlled stake reservation and settlement.
