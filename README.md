@@ -12,7 +12,7 @@
 
 RyoLand is a high-performance Web3 and Telegram-based online gaming and betting platform built with Django. The platform is designed around secure identity verification, wallet-aware authentication, reliable accounting, and modular service architecture that can scale into a full gaming ecosystem.
 
-This codebase implements user identity and blockchain verification, including Telegram login, EVM wallet signing, TON proof verification, and JWT-protected API access, alongside a wallet and append-only double-entry ledger. The next milestone is the betting engine and odds verification.
+This codebase implements user identity and blockchain verification, including Telegram login, EVM wallet signing, TON proof verification, and JWT-protected API access, alongside a wallet, append-only double-entry ledger, and betting engine. The next milestone is outcome settlement and payouts.
 
 ---
 
@@ -116,7 +116,7 @@ flowchart LR
     Z --> P[(Database)]
     B --> Q[Redis]
 
-    R[Future Betting Engine] --> Y
+    R[Betting Engine] --> Y
     Y --> S[Auditable Balance & Settlement Engine]
 ```
 
@@ -159,7 +159,11 @@ GameSection/
 │   │   ├── tests.py
 │   │   ├── urls.py
 │   │   └── views.py
-│   ├── betting/                 # Planned
+│   ├── betting/                 # Implemented in Step 3
+│   │   ├── migrations/
+│   │   ├── models.py
+│   │   ├── services.py
+│   │   ├── tests.py
 │   │   └── ...
 │   ├── transactions/            # Planned
 │   │   └── ...
@@ -198,6 +202,13 @@ GameSection/
   - atomic wallet services with idempotency and balance locking
   - read-only balance and paginated transaction-history APIs
   - read-only Django admin for wallets and ledger records
+
+- `apps.betting`
+  - event, market, selection, bet, and bet-selection schema
+  - single and combo bet placement with immutable `locked_odds` snapshots
+  - relative odds drift tolerance and combo market validation via `InvalidComboError`
+  - double-layered idempotency across bet placement and wallet reservation
+  - ledger links through `reservation_transaction` and `settlement_transaction`
 
 ---
 
@@ -241,9 +252,27 @@ Verification status:
 - `python manage.py test` → 106 tests discovered (105 passed, 1 skipped)
 - The local test run used SQLite. PostgreSQL-specific concurrency behavior has not been verified in this workspace; run the suite against PostgreSQL before treating that backend as certified.
 
-### ⏳ Step 3: Betting Engine & Odds Verification (Upcoming Milestone)
+### ✅ Step 3: Betting Engine & Odds Verification (`apps.betting`) (Completed)
 
-The next milestone will build the betting engine and verify odds, using the wallet service for atomic stake reservation and settlement.
+Step 3 adds event and market cataloging, odds verification, and atomic single/combo bet placement:
+
+- **Betting schema:** `SportEvent`, `Market`, and `Selection`, plus `Bet` and `BetSelection` tickets.
+- **Single and combo bets:** Combo odds are multiplied across distinct markets; invalid combinations raise `InvalidComboError`.
+- **Immutable odds snapshots:** The current database odds are stored as `locked_odds` at placement, independent of later price changes.
+- **Relative odds drift tolerance:** Submitted odds are accepted within a configurable relative tolerance, then the current database odds are locked.
+- **Double-layered idempotency:** Bet placement and the underlying wallet reservation each use idempotency keys to prevent duplicate tickets or stake movement.
+- **Ledger traceability:** Bets link to the reserve ledger entry through `reservation_transaction`; `settlement_transaction` is ready for Step 4.
+- **Concurrency coverage:** Tests exercise concurrent idempotent replays and competing stake reservations; run them against PostgreSQL to verify its row-lock behavior.
+
+Verification status:
+
+- `python manage.py check` → passed
+- `python manage.py test` → 134 tests discovered; 133 passed and 1 skipped on SQLite.
+- PostgreSQL concurrency was not run locally because the configured PostgreSQL password is unavailable; the concurrency test cases are included for PostgreSQL-backed runs.
+
+### ⏳ Step 4: Outcome Settlement & Payout Engine (`apps.settlement`) (Next)
+
+The next milestone will resolve event outcomes, settle bet legs, release or pay locked stakes, and record each result in the double-entry ledger.
 
 ---
 
@@ -376,4 +405,4 @@ This project is currently intended for internal and project-specific use. Add an
 
 ## Summary
 
-RyoLand is a secure, modular Web3 gaming platform with identity verification and an auditable wallet ledger in place. The next milestone is the betting engine and odds verification, building on the wallet service for controlled stake reservation and settlement.
+RyoLand is a secure, modular Web3 gaming platform with identity verification, an auditable wallet ledger, and a betting engine with odds verification in place. The next milestone is outcome settlement and payouts, building on the wallet service for controlled stake release and settlement.

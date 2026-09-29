@@ -1,6 +1,7 @@
 """Project settings for local development and deployment."""
 import os
 from datetime import timedelta
+from decimal import Decimal
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -22,6 +23,7 @@ INSTALLED_APPS = [
     "apps.core",
     "apps.accounts",
     "apps.wallet",
+    "apps.betting",
 ]
 
 MIDDLEWARE = [
@@ -122,6 +124,14 @@ ACCOUNTS_MAX_LINKED_WALLETS = 10
 
 TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "123456:TEST-TOKEN")
 TELEGRAM_AUTH_MAX_AGE_SECONDS = 3600
+
+# Betting limits are currency-agnostic for now; currency-specific limits can follow a
+# future pricing/FX feature.
+BETTING_MIN_STAKE = Decimal(os.environ.get("BETTING_MIN_STAKE", "0.01"))
+BETTING_MAX_STAKE = Decimal(os.environ.get("BETTING_MAX_STAKE", "10000"))
+BETTING_MAX_POTENTIAL_PAYOUT = Decimal(os.environ.get("BETTING_MAX_POTENTIAL_PAYOUT", "100000"))
+BETTING_MAX_COMBO_SELECTIONS = 20
+BETTING_ODDS_DRIFT_TOLERANCE = Decimal(os.environ.get("BETTING_ODDS_DRIFT_TOLERANCE", "0.02"))
 
 if os.environ.get("REDIS_URL"):
     CACHES = {

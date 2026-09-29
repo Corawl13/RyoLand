@@ -1,0 +1,1 @@
+"""Betting schema migrations."""

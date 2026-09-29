@@ -6,4 +6,5 @@ urlpatterns = [
     path(settings.ADMIN_URL, admin.site.urls),
     path("api/v1/", include("apps.accounts.urls")),
     path("api/v1/", include("apps.wallet.urls")),
+    path("api/v1/", include("apps.betting.urls")),
 ]
