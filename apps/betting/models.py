@@ -42,6 +42,12 @@ class BetStatus(models.TextChoices):
     VOID = "void", "Void"
 
 
+class SelectionStatus(models.TextChoices):
+    PENDING = "pending", "Pending"
+    WON = "won", "Won"
+    LOST = "lost", "Lost"
+    VOID = "void", "Void"
+
 BET_SETTLED_STATUSES = frozenset({BetStatus.WON, BetStatus.LOST, BetStatus.CANCELLED, BetStatus.REFUNDED, BetStatus.VOID})
 
 ODDS_KWARGS = dict(max_digits=12, decimal_places=4)
@@ -96,6 +102,7 @@ class Selection(BaseModel):
     market = models.ForeignKey(Market, on_delete=models.CASCADE, related_name="selections")
     name = models.CharField(max_length=255)
     current_odds = models.DecimalField(**ODDS_KWARGS)
+    status = models.CharField(max_length=10, choices=SelectionStatus.choices, default=SelectionStatus.PENDING)
 
     class Meta:
         constraints = [models.CheckConstraint(condition=Q(current_odds__gte=1), name="betting_selection_odds_gte_1")]

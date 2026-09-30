@@ -6,13 +6,13 @@
   <img src="https://img.shields.io/badge/DRF-REST-ff1709" alt="DRF" />
   <img src="https://img.shields.io/badge/PostgreSQL-Database-4169E1?logo=postgresql&logoColor=white" alt="PostgreSQL" />
   <img src="https://img.shields.io/badge/Web3-EVM%20%2B%20TON-8A2BE2" alt="Web3" />
-  <img src="https://img.shields.io/badge/Status-Foundation%20Complete-4CAF50" alt="Status" />
+  <img src="https://img.shields.io/badge/Status-Step%204%20Complete-4CAF50" alt="Status" />
 
 </div>
 
 RyoLand is a high-performance Web3 and Telegram-based online gaming and betting platform built with Django. The platform is designed around secure identity verification, wallet-aware authentication, reliable accounting, and modular service architecture that can scale into a full gaming ecosystem.
 
-This codebase implements user identity and blockchain verification, including Telegram login, EVM wallet signing, TON proof verification, and JWT-protected API access, alongside a wallet, append-only double-entry ledger, and betting engine. The next milestone is outcome settlement and payouts.
+This codebase implements user identity and blockchain verification, including Telegram login, EVM wallet signing, TON proof verification, and JWT-protected API access, alongside a wallet, append-only double-entry ledger, betting engine, and outcome settlement and payouts.
 
 ---
 
@@ -165,6 +165,12 @@ GameSection/
 │   │   ├── services.py
 │   │   ├── tests.py
 │   │   └── ...
+│   ├── settlement/              # Implemented in Step 4
+│   │   ├── migrations/
+│   │   ├── models.py
+│   │   ├── services.py
+│   │   ├── tests.py
+│   │   └── ...
 │   ├── transactions/            # Planned
 │   │   └── ...
 │   ├── risk/                    # Planned
@@ -209,6 +215,13 @@ GameSection/
   - relative odds drift tolerance and combo market validation via `InvalidComboError`
   - double-layered idempotency across bet placement and wallet reservation
   - ledger links through `reservation_transaction` and `settlement_transaction`
+
+- `apps.settlement`
+  - two-phase event settlement with independent per-bet transactions and idempotent retries
+  - multi-currency batch payout totals recorded in `payout_totals` JSON
+  - `PENDING/WON/LOST/VOID` selection outcome tracking
+  - single and combo bet payout calculation, including voided combo legs
+  - staff-only API and Django admin result submission, settlement triggering, and batch audit history
 
 ---
 
@@ -269,9 +282,21 @@ Verification status:
 - `python manage.py test` → 134 tests discovered on local PostgreSQL; 133 passed, 1 skipped, 0 failures, and 0 errors.
 - `test_concurrent_bets_cannot_overdraw_the_wallet` → passed on PostgreSQL.
 
-### ⏳ Step 4: Outcome Settlement & Payout Engine (`apps.settlement`) (Next)
+### ✅ Step 4: Outcome Settlement & Payout Engine (`apps.settlement`) (Completed)
 
-The next milestone will resolve event outcomes, settle bet legs, release or pay locked stakes, and record each result in the double-entry ledger.
+Step 4 resolves official event results, settles bet legs, and releases or pays reserved stakes through the double-entry wallet ledger:
+
+- **Two-phase transaction design:** Event and market resolution commits separately from per-bet settlement; each bet is isolated in its own transaction so concurrent workers can process different bets without holding one event-wide transaction.
+- **Multi-currency payout tracking:** Settlement batches aggregate payout amounts by currency in the `payout_totals` JSON field.
+- **Selection outcomes:** Markets resolve selections to `PENDING`, `WON`, `LOST`, or `VOID`.
+- **Single and combo settlement:** Winning odds are applied to single/combo stakes; a lost combo leg loses the ticket, void legs contribute neutral odds, and a fully void ticket is refunded.
+- **Operator workflows:** Staff can enter event results in Django admin, trigger settlement for selected events, and review batch status, errors, and payout totals. The staff-only API also supports result submission and batch history.
+
+Verification status:
+
+- `python manage.py check` → passed
+- `python manage.py test` → 155 tests discovered on PostgreSQL; 154 passed, 1 optional TON test skipped, 0 failures, and 0 errors.
+- Four-worker concurrent settlement test → passed on PostgreSQL.
 
 ---
 
@@ -404,4 +429,4 @@ This project is currently intended for internal and project-specific use. Add an
 
 ## Summary
 
-RyoLand is a secure, modular Web3 gaming platform with identity verification, an auditable wallet ledger, and a betting engine with odds verification in place. The next milestone is outcome settlement and payouts, building on the wallet service for controlled stake release and settlement.
+RyoLand is a secure, modular Web3 gaming platform with identity verification, an auditable wallet ledger, betting with odds verification, and an outcome settlement and payout engine.
